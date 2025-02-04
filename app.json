@@ -1,28 +1,56 @@
 {
   "expo": {
     "name": "EBL",
+    "scheme": "myapp",
     "slug": "EBL",
     "version": "1.0.0",
+    "platforms": ["ios", "android"],
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/images/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.extrabeverageslimited.eblapp",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
+      "package": "com.extrabeverageslimited.eblapp",
+      "versionCode": 2,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
+      },
+      "splits": {
+        "density": true, 
+        "abi": true
       }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "favicon": "./assets/logo.png"
+    },
+    "notification": {
+      "vapidPublicKey": "BEvWZ0xiAiavgXK2OXIBMJOev9DpqvEJ0XV7zPmwDw-55qgI_6yCVkgo9ce5Dlq8ehZQxOdrQ9dySj2u_AKPs3k"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "136030e0-276f-4fd5-a509-ed61ef6ef4ff"
+      }
+    },
+    "owner": "kim_dev25"
   }
 }
