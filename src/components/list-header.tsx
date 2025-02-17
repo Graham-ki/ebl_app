@@ -9,7 +9,6 @@ import {
   FlatList,
   StatusBar,
   Platform,
-  ActivityIndicator,
   Modal,
 } from 'react-native';
 import { Link } from 'expo-router';
@@ -17,6 +16,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { useCartStore } from '../store/cart-store';
 import { supabase } from '../lib/supabase';
 import { Tables } from '../types/database.types';
+import React from 'react';
 
 export const ListHeader = ({ categories }: { categories: Tables<'category'>[] }) => {
   const { getItemCount } = useCartStore();
@@ -58,8 +58,6 @@ export const ListHeader = ({ categories }: { categories: Tables<'category'>[] })
 
   return (
     <View style={styles.headerContainer}>
-      <StatusBar barStyle={Platform.OS === 'ios' ? 'light' : 'auto'} />
-      
       <View style={styles.headerTop}>
         {/* Left Side (User Avatar & Name) */}
         <View style={styles.headerLeft}>
@@ -110,7 +108,6 @@ export const ListHeader = ({ categories }: { categories: Tables<'category'>[] })
           renderItem={({ item }) => (
             <Link asChild href={`/categories/${item.slug}`}>
               <Pressable style={styles.category}>
-                <Image source={{ uri: item.imageUrl }} style={styles.categoryImage} />
                 <Text style={styles.categoryText}>{item.name}</Text>
               </Pressable>
             </Link>
@@ -195,16 +192,28 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
     borderRadius: 20,
   },
-  categoriesContainer: {},
+  categoriesContainer: {
+    padding: 20,
+  },
   sectionTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 10,
   },
   category: {
-    width: 100,
-    alignItems: 'center',
-    marginBottom: 16,
+    backgroundColor: '#ffffff', // White background color for the card
+    paddingVertical: 15, // Padding on top and bottom
+    paddingHorizontal: 25, // Padding on left and right
+    borderRadius: 12, // Rounded corners
+    shadowColor: '#000', // Shadow color
+    shadowOpacity: 0.1, // Shadow opacity
+    shadowOffset: { width: 0, height: 2 }, // Shadow offset
+    shadowRadius: 8, // Shadow spread
+    elevation: 3, // Elevation for Android devices (to show shadow)
+    marginBottom: 15, // Space between multiple cards
+    alignItems: 'center', // Center text horizontally
+    justifyContent: 'center',
+    
   },
   categoryImage: {
     width: 60,
@@ -212,7 +221,12 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     marginBottom: 8,
   },
-  categoryText: {},
+  categoryText: {
+    fontSize: 16, 
+    fontWeight: 'bold', 
+    color: '#333', 
+    textAlign: 'center',
+  },
   badgeContainer: {
     position: 'absolute',
     top: -5,

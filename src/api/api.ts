@@ -98,20 +98,18 @@ export const createOrder = () => {
   const {
     user: { id },
   } = useAuth();
-
-  const slug = generateOrderSlug();
   const queryClient = useQueryClient();
 
   return useMutation({
-    async mutationFn({ totalPrice, proofOfPayment }: { totalPrice: number; proofOfPayment: string }) {
+    mutationFn: async ({ totalPrice }: { totalPrice: number }) => {
       const { data, error } = await supabase
         .from('order')
         .insert({
           totalPrice,
-          slug,
+          slug: generateOrderSlug(),
           user: id,
           status: 'Pending',
-          proof: proofOfPayment, // Add proof column
+          receiption_status: 'Pending',
         })
         .select('*')
         .single();
@@ -123,9 +121,18 @@ export const createOrder = () => {
 
       return data;
     },
+    onSuccess: (newOrder) => {
+      // Invalidate the 'orders' query to trigger a refetch
+      queryClient.invalidateQueries({ queryKey: ['orders', id] });
 
-    async onSuccess() {
-      await queryClient.invalidateQueries({ queryKey: ['order'] });
+      // Optional: Optimistically update the orders list
+      queryClient.setQueryData(['orders', id], (oldOrders: any) => [
+        newOrder,
+        ...(oldOrders || []),
+      ]);
+    },
+    onError: (error) => {
+      alert('Failed to place order: ' + error.message);
     },
   });
 };
@@ -183,9 +190,15 @@ export const createOrderItem = () => {
 };
 
 export const getMyOrder = (slug: string) => {
-  const {
-    user: { id },
-  } = useAuth();
+  const { user } = useAuth();
+
+  if (!user || !user.id) {
+    return {
+      data: [],
+      error: 'User not authenticated',
+      isLoading: false,
+    };
+  }
 
   return useQuery({
     queryKey: ['orders', slug],
@@ -194,15 +207,50 @@ export const getMyOrder = (slug: string) => {
         .from('order')
         .select('*, order_items:order_item(*, products:product(*))')
         .eq('slug', slug)
-        .eq('user', id)
+        .eq('user', user.id)
         .single();
 
-      if (error || !data)
-        alert(
-          'Unable to fetch data!'
-        );
+      if (error || !data) {
+        alert('Unable to fetch data!');
+      }
 
       return data;
     },
   });
+};
+export const getOrderProofs = async (orderId: number) => {
+  try {
+    const { data, error } = await supabase
+      .from('proof_of_payment')
+      .select('*')
+      .eq('order_id', orderId);
+
+    if (error) {
+      console.error('Error fetching proofs of payment:', error);
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Failed to fetch proofs of payment:', error);
+    throw error;
+  }
+};
+
+export const updateReceiptStatus = async (orderId: string, status: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('order')
+      .update({ receiption_status: status })
+      .eq('id', orderId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data; // Return the updated data if successful
+  } catch (error) {
+    console.error('Error updating receipt status:', error);
+    throw error; // Throw error to handle in the UI
+  }
 };

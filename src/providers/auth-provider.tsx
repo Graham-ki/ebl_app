@@ -1,17 +1,21 @@
+import React, { createContext, PropsWithChildren, useContext, useEffect, useState } from 'react';
 import { Session } from '@supabase/supabase-js';
-import {
-  createContext,
-  PropsWithChildren,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
 import { supabase } from '../lib/supabase';
+
+type User = {
+  avatar_url: string;
+  created_at: string | null;
+  email: string;
+  expo_notification_token: string | null;
+  id: string;
+  stripe_customer_id: string | null;
+  type: string | null;
+};
 
 type AuthData = {
   session: Session | null;
   mounting: boolean;
-  user: any;
+  user: User | null;
 };
 
 const AuthContext = createContext<AuthData>({
@@ -22,46 +26,41 @@ const AuthContext = createContext<AuthData>({
 
 export default function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<{
-    avatar_url: string;
-    created_at: string | null;
-    email: string;
-    expo_notification_token: string | null;
-    id: string;
-    stripe_customer_id: string | null;
-    type: string | null;
-  } | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [mounting, setMounting] = useState(true);
+
+  const fetchUser = async (session: Session | null) => {
+    if (!session?.user?.id) return;
+    
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', session.user.id)
+      .single();
+
+    if (error) {
+      console.error('Error fetching user:', error);
+    } else {
+      setUser(user);
+    }
+  };
 
   useEffect(() => {
     const fetchSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
+      const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
-
-      if (session) {
-        const { data: user, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-
-        if (error) {
-          console.error('error', error);
-        } else {
-          setUser(user);
-        }
-      }
-
+      await fetchUser(session);
       setMounting(false);
     };
 
     fetchSession();
-    supabase.auth.onAuthStateChange((_event, session) => {
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
+      await fetchUser(session);
     });
+
+    return () => authListener?.subscription?.unsubscribe();
   }, []);
 
   return (

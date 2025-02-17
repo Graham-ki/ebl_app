@@ -7,15 +7,12 @@ export const ProductListItem = ({product}:{product:Tables<'product'>}) => {
   return (
     <Link asChild href={`/product/${product.slug}`}>
     <Pressable style={styles.item}>
-      <View style={styles.itemImageContainer}>
-        <Image source={{uri:product.heroImage}} style={styles.itemImage}></Image>
-      </View>
       <View style={styles.itemTextContainer}>
         <Text style={styles.itemTitle}>
           {product.title}
         </Text>
         <Text style={styles.itemPrice}>
-          UGX {product.price.toFixed()}
+          Order now!
         </Text>
       </View>
     </Pressable>
@@ -44,15 +41,26 @@ const styles = StyleSheet.create({
     },
     itemTextContainer:{
       padding:8,
-      alignItems: 'flex-start',
-      gap:4
+      alignItems: 'center',
+      gap:4,
+      flexDirection: 'column',
+      justifyContent: 'center',
+      textAlign: 'center',
     },
     itemTitle:{
       fontSize:16,
       color:'#888'
     },
     itemPrice:{
-      fontSize:14,
-      fontWeight:'bold'
+      fontSize: 14,
+  fontWeight: 'bold',
+  backgroundColor: 'lightgreen', 
+  color: 'white', 
+  paddingVertical: 6, 
+  paddingHorizontal: 12, 
+  borderRadius: 8, 
+  textAlign: 'center', 
+  cursor: 'pointer', 
+  alignItems:'center'
     }
 })

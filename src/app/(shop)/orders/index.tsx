@@ -4,6 +4,7 @@ import { Link, Stack } from 'expo-router';
 import { Tables } from '../../../types/database.types';
 import { getMyOrders } from '../../../api/api';
 import { format } from 'date-fns';
+import { useAuth } from '../../../providers/auth-provider';
 const renderItem: ListRenderItem<Tables<'order'>> = ({item}) => (
   <Link href={`/orders/${item.slug}`} asChild>
     <Pressable style = {styles.orderContainer}>
@@ -22,23 +23,57 @@ const renderItem: ListRenderItem<Tables<'order'>> = ({item}) => (
 );
 
 const Orders = () => {
+  const { user } = useAuth(); // Ensure we access the user object directly
+
+  // If user is not authenticated or user object is undefined/null
+  if (!user || !user.id) {
+    return (
+      <View
+        style={{
+          backgroundColor: '#f8d7da', // Light red background for warning
+          borderColor: '#f5c6cb', // Lighter red border
+          borderWidth: 1,
+          borderRadius: 5,
+          padding: 10,
+          margin: 10,
+        }}
+      >
+        <Text
+          style={{
+            fontSize: 16,
+            color: '#721c24', // Darker red text for warning
+            textAlign: 'center',
+          }}
+        >
+          Please log in to view your orders.
+        </Text>
+      </View>
+    );
+  }
+
   const { data: orders, error, isLoading } = getMyOrders();
 
   if (isLoading) return <ActivityIndicator />;
 
-  if (error || !orders) return <Text>Something went wrong! {error?.message}</Text>;
+  if (error || !orders) {
+    return (
+      <Text style={{ color: 'red', textAlign: 'center', margin: 10 }}>
+        Something went wrong! {error?.message}
+      </Text>
+    );
+  }
 
-  if (!orders.length)
+  if (!orders.length) {
     return (
       <View
-    style={{
-    backgroundColor: '#d1ecf1', // Light blue background (Bootstrap info)
-    borderColor: '#bee5eb', // Lighter blue border
-    borderWidth: 1,
-    borderRadius: 5,
-    padding: 10,
-    margin: 10,
-      }}
+        style={{
+          backgroundColor: '#d1ecf1', // Light blue background (Bootstrap info)
+          borderColor: '#bee5eb', // Lighter blue border
+          borderWidth: 1,
+          borderRadius: 5,
+          padding: 10,
+          margin: 10,
+        }}
       >
         <Text
           style={{
@@ -49,34 +84,41 @@ const Orders = () => {
         >
           You have no orders yet!
         </Text>
-  </View>
+      </View>
     );
+  }
 
   return (
-    <View style ={styles.container}>
-      <View 
-    style={{
-    backgroundColor: 'lightblue', // Light blue background (Bootstrap info)
-    borderColor: '#bee5eb', // Lighter blue border
-    borderWidth: 1,
-    borderRadius: 5,
-    padding: 10,
-    margin: 10,
-      }}>
-      <Text 
+    <View style={styles.container}>
+      <View
+        style={{
+          backgroundColor: 'lightblue', // Light blue background (Bootstrap info)
+          borderColor: '#bee5eb', // Lighter blue border
+          borderWidth: 1,
+          borderRadius: 5,
+          padding: 10,
+          margin: 10,
+        }}
+      >
+        <Text
           style={{
             fontSize: 16,
             color: '#0c5460', // Darker blue text (Bootstrap info)
             textAlign: 'center',
-          }}>All YOUR ORDERS - tap to view details!
-      </Text>
+          }}
+        >
+          All YOUR ORDERS - tap to view details!
+        </Text>
       </View>
-      <Stack.Screen options={{title:'Orders'}}/>
-      <FlatList data={orders} keyExtractor={item => item.id.toString()}
-        renderItem={renderItem}/>
+      <Stack.Screen options={{ title: 'Orders' }} />
+      <FlatList
+        data={orders}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderItem}
+      />
     </View>
-  )
-}
+  );
+};
 
 export default Orders
 
@@ -129,10 +171,13 @@ const styles: { [key: string]: any } = StyleSheet.create({
   statusBadge_Completed: {
     backgroundColor: '#4caf50',
   },
-  statusBadge_Shipped: {
-    backgroundColor: '#2196f3',
+  statusBadge_Cancelled: {
+    backgroundColor: 'red',
   },
-  statusBadge_InTransit: {
-    backgroundColor: '#ff9800',
+  statusBadge_Approved: {
+    backgroundColor: 'blue',
+  },
+  statusBadge_Balanced: {
+    backgroundColor: 'teal',
   },
 });

@@ -10,6 +10,7 @@ import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
 
 import { ProductListItem } from '../../components/product-list-item';
 import { getCategoryAndProducts } from '../../api/api';
+import React from 'react';
 
 const Category = () => {
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -25,7 +26,6 @@ const Category = () => {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: category.name }} />
-      <Image source={{ uri: category.imageUrl }} style={styles.categoryImage} />
       <Text style={styles.categoryName}>Available {category.name}:</Text>
 
       {products.length === 0 ? (

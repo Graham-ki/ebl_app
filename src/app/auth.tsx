@@ -6,10 +6,10 @@ import { Redirect, Stack } from "expo-router";
 import { supabase } from "../lib/supabase";
 import { Toast } from "react-native-toast-notifications";
 import { useAuth } from "../providers/auth-provider";
+import React from "react";
 const authSchema = zod.object({
     email: zod.string().email({message: 'Invalid email!'}),
     password: zod.string().min(6,{message: 'Password must be atleast 6 characters long!'})
-
 })
 export default function Auth(){
   const {session} = useAuth();
@@ -32,23 +32,6 @@ export default function Auth(){
             duration: 1500
           })
         }
-    };
-    const signUp = async (data:zod.infer<typeof authSchema>) => {
-      const {error} = await supabase.auth.signUp({
-        ...data,
-        options: {
-          emailRedirectTo: "myapp://auth",
-        },
-      });
-      if(error){
-        alert(error.message);
-      }else{
-        Toast.show('Signed  up Successfully. Check your email to confirm!',{
-          type: 'success',
-          placement: 'top',
-          duration: 1500
-        })
-      }
     };
     return (
        <ImageBackground source={require('../../assets/images/login.jpg')}
@@ -77,8 +60,7 @@ export default function Auth(){
                 editable={!formState.isSubmitting}
                 />
                 {error && <Text style={styles.error}>{error.message}</Text>}
-                </>
-                
+                </> 
             )}
             />
             <Controller control={control} name="password"
@@ -102,11 +84,7 @@ export default function Auth(){
             />
             <TouchableOpacity style={styles.button} onPress={handleSubmit(signIn)}
             disabled={formState.isSubmitting}>
-                <Text style={styles.buttonText}>Sign In</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.button,styles.signUpButton]} onPress={handleSubmit(signUp)}
-            disabled={formState.isSubmitting}>
-                <Text style={styles.buttonText}>Sign Up</Text>
+                <Text style={styles.buttonText}>Continue</Text>
             </TouchableOpacity>
         </View>
        </ImageBackground>
@@ -132,32 +110,44 @@ const styles = StyleSheet.create({
       width: '100%',
     },
     title: {
-      fontSize: 36,
+      fontSize: 55,
       fontWeight: 'bold',
-      color: '#fff',
+      color: 'lightgreen',
       marginBottom: 8,
+      textShadowColor: '2 2 4 rgba(0, 0, 0, 0.5),0 0 10 rgba(255, 215, 0, 0.7)',
+      textShadowOffset: { width: 10, height: 10 }, // Creates the 3D effect
+      textShadowRadius: 4,
+      letterSpacing: 5,
+      textAlign: 'center',
+      transform: [{ translateY: -2 }],
+      backgroundColor: 'linear-gradient(135deg, #ff7e5f, #feb47b)',
+      
     },
     subtitle: {
       fontSize: 18,
-      color: '#ddd',
+      color: 'lightgreen',
       marginBottom: 32,
     },
     input: {
       width: '90%',
       padding: 12,
       marginBottom: 16,
-      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+      backgroundColor: 'rgba(202, 248, 193, 0.9)',
       borderRadius: 8,
       fontSize: 16,
-      color: '#000',
+      color: 'black',
+      borderColor: 'green',
+      borderWidth: 1,
     },
     button: {
-      backgroundColor: '#6a1b9a',
+      backgroundColor: 'transparent',
       padding: 16,
       borderRadius: 8,
       marginBottom: 16,
       width: '90%',
       alignItems: 'center',
+      borderColor: 'green',
+      borderWidth: 1,
     },
     signUpButton: {
       backgroundColor: 'transparent',
