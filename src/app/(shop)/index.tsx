@@ -13,7 +13,7 @@ const Home = () => {
         <ProductListItem product={item}/>}
       keyExtractor={item=>item.id.toString()}
       numColumns={2}
-      ListHeaderComponent={<ListHeader categories={data.categories}/>}
+      ListHeaderComponent={<ListHeader categories={data.categories || []}/>}
       contentContainerStyle={styles.FlatListContent}
       columnWrapperStyle ={styles.FlatListColm}
       style={{paddingHorizontal:10,paddingVertical:5}}

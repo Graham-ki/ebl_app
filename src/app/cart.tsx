@@ -15,7 +15,6 @@ type CartItemType = {
     id: number;
     title: string;
     image: string;
-    price: number;
     quantity: number;
 };
 
@@ -31,7 +30,6 @@ const CartItem = ({ item, onDecrement, onIncrement, onRemove }: CartItemProps) =
         <View style={styles.cartItem}>
             <View style={styles.itemDetails}>
                 <Text style={styles.itemTitle}>{item.title}</Text>
-                <Text style={styles.itemPrice}>UGX {item.price.toFixed()}</Text>
                 <View style={styles.quantityContainer}>
                     <TouchableOpacity onPress={() => onDecrement(item.id)} style={styles.quantityButton}>
                         <Text style={styles.quantityButtonText}>-</Text>
@@ -50,22 +48,16 @@ const CartItem = ({ item, onDecrement, onIncrement, onRemove }: CartItemProps) =
 };
 
 export default function Cart() {
-    const { items, removeItem, incrementItem, decrementItem, getTotalPrice, resetCart } = useCartStore();
+    const { items, removeItem, incrementItem, decrementItem, resetCart } = useCartStore();
     const { mutateAsync: createSuperbaseOrder } = createOrder();
     const { mutateAsync: createSuperbaseOrderItem } = createOrderItem();
     
     const handleCheckout = async () => {
-        const totalPrice = parseFloat(getTotalPrice());
-  
         try {
-            // Create the order without proof of payment
             await createSuperbaseOrder(
-                {
-                    totalPrice,
-                },
+                {},
                 {
                     onSuccess: data => {
-                        // Create order items
                         createSuperbaseOrderItem(
                             items.map(item => ({
                                 orderId: data.id,
@@ -87,7 +79,7 @@ export default function Cart() {
             alert('Failed to place order!');
         }
     };
-  
+
     return (
         <View style={styles.container}>
             {items.length === 0 ? (
@@ -105,11 +97,9 @@ export default function Cart() {
                     contentContainerStyle={styles.cartList}
                 />
             )}
-  
+
             {/* Checkout Section */}
             <View style={styles.footer}>
-                <Text style={styles.totalText}>Total: <Text style={styles.totalAmount}>UGX {getTotalPrice()}</Text></Text>
-  
                 <View style={styles.buttonRow}>
                     {/* Checkout Button */}
                     <TouchableOpacity 
@@ -143,11 +133,6 @@ const styles = StyleSheet.create({
       borderRadius: 8,
       backgroundColor: '#f9f9f9',
   },
-  itemImage: {
-      width: 80,
-      height: 80,
-      borderRadius: 8,
-  },
   itemDetails: {
       flex: 1,
       marginLeft: 16,
@@ -155,11 +140,6 @@ const styles = StyleSheet.create({
   itemTitle: {
       fontSize: 18,
       fontWeight: 'bold',
-      marginBottom: 4,
-  },
-  itemPrice: {
-      fontSize: 16,
-      color: '#888',
       marginBottom: 4,
   },
   itemQuantity: {
@@ -181,19 +161,9 @@ const styles = StyleSheet.create({
       paddingVertical: 16,
       paddingHorizontal: 16,
   },
-  totalAmount: {
-      fontSize: 20,
-      color: '#28a745',
-  },
   buttonRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-  },
-  totalText: {
-      fontSize: 18,
-      fontWeight: 'bold',
-      textAlign: 'center',
-      marginBottom: 12,
   },
   checkoutButton: {
       flex: 1,

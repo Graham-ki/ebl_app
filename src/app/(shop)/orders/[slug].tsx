@@ -35,13 +35,12 @@ const OrderDetails = () => {
 
   const sections = [
     {
-      title: 'Order Items',
+      title: 'Order Items:',
       data: order.order_items,
       renderItem: ({ item }: any) => (
         <View style={styles.orderItem}>
           <Text style={styles.itemName}>{item.products.title}</Text>
-          <Text>Unit price: UGX {item.products.price}</Text>
-          <Text>Quantity: {item.quantity}</Text>
+          <Text>Boxes ordered: {item.quantity}</Text>
         </View>
       ),
     },
@@ -103,9 +102,8 @@ const OrderDetails = () => {
             </Text>
             </TouchableOpacity>
           </View>
-          <Text style={styles.date}>{format(new Date(order.created_at), 'MMM dd, yyyy')}</Text>
           <View style={styles.totalContainer}>
-            <Text style={styles.totalText}>Total Sum: UGX {order.totalPrice}</Text>
+          <Text style={styles.totalText}>{format(new Date(order.created_at), 'MMM dd, yyyy')}</Text>
           </View>
         </>
       }

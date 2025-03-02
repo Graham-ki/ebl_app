@@ -6,67 +6,42 @@ import {
   TouchableOpacity,
   View,
   ScrollView,
-  Alert,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import { useToast } from 'react-native-toast-notifications';
-import { useCartStore } from '../../store/cart-store'; // Custom store for cart logic
-import { getProduct } from '../../api/api'; // Custom API call for fetching product details
+import { useCartStore } from '../../store/cart-store'; 
+import { getProduct } from '../../api/api'; 
 
 const ProductDetails = () => {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const toast = useToast();
 
   const { data: product, error, isLoading } = getProduct(slug);
-  const { items, addItem, incrementItem, decrementItem } = useCartStore();
+  const { items, addItem } = useCartStore();
   const cartItem = items.find(item => item.id === product?.id);
   const initialQuantity = cartItem ? cartItem.quantity : 0;
-  const [quantity, setQuantity] = useState(initialQuantity);
-  const [canExceedQuantity, setCanExceedQuantity] = useState(false); // Manage quantity check bypass
+  const [quantity, setQuantity] = useState(initialQuantity.toString());
 
   if (isLoading) return <ActivityIndicator />;
   if (error) return <Text style={styles.errorMessage}>Error: {error.message}</Text>;
   if (!product) return <Redirect href='/404' />;
 
-  const increaseQuantity = () => {
-    if (quantity < product.maxQuantity || canExceedQuantity) {
-      setQuantity(prev => prev + 1);
-      incrementItem(product.id);
-    } else {
-      Alert.alert(
-        'Quantity Limit Exceeded',
-        'You are adding items beyond the available quantity. Your order may have to wait. Do you want to continue?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Continue Adding',
-            onPress: () => {
-              setCanExceedQuantity(true); // Allow unlimited increments after confirmation
-              setQuantity(prev => prev + 1);
-              incrementItem(product.id);
-            },
-          },
-        ]
-      );
-    }
-  };
-
-  const decreaseQuantity = () => {
-    if (quantity >= 1) {
-      setQuantity(prev => prev - 1);
-      decrementItem(product.id);
+  const handleQuantityChange = (text: string): void => {
+    // Allow only numeric input
+    if (/^\d*$/.test(text)) {
+      setQuantity(text);
     }
   };
 
   const addToCart = () => {
+    const quantityNumber = parseInt(quantity, 10) || 0;
+
     addItem({
       id: product.id,
       title: product.title,
-      heroImage: product.heroImage,
-      price: product.price,
-      quantity,
+      quantity: quantityNumber,
       maxQuantity: product.maxQuantity,
-      image: product.heroImage,
     });
     toast.show('Item added to cart', {
       type: 'success',
@@ -75,7 +50,7 @@ const ProductDetails = () => {
     });
   };
 
-  const totalPrice = (product.price * quantity).toFixed();
+  const totalPrice = (product.price * (parseInt(quantity, 10) || 0)).toFixed();
 
   return (
     <View style={styles.container}>
@@ -83,43 +58,24 @@ const ProductDetails = () => {
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
         <View style={styles.card}>
           <Text style={styles.title}>{product.title}</Text>
-          <Text>Use the - and + buttons to specify the number of boxes</Text>
-
-          <View style={styles.priceContainer}>
-            <Text style={styles.priceLabel}>Box Price:</Text>
-            <Text style={styles.price}>UGX {product.price.toFixed()}</Text>
-          </View>
-          <View style={styles.priceContainer}>
-            <Text style={styles.priceLabel}>Total You will Pay:</Text>
-            <Text style={styles.price}>UGX {totalPrice}</Text>
-          </View>
-
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={styles.quantityButton}
-              onPress={decreaseQuantity}
-              disabled={quantity <= 0}
-            >
-              <Text style={styles.quantityButtonText}>-</Text>
-            </TouchableOpacity>
-
-            <Text style={styles.quantity}>{quantity}</Text>
-
-            <TouchableOpacity
-              style={styles.quantityButton}
-              onPress={increaseQuantity}
-            >
-              <Text style={styles.quantityButtonText}>+</Text>
-            </TouchableOpacity>
+          <Text>Enter the number of boxes</Text>
+          <View style={styles.quantityInputContainer}>
+            <TextInput
+              style={styles.quantityInput}
+              value={quantity}
+              onChangeText={handleQuantityChange}
+              keyboardType="numeric"
+              placeholder="Enter quantity"
+            />
           </View>
         </View>
       </ScrollView>
 
       <View style={styles.buttonWrapper}>
         <TouchableOpacity
-          style={[styles.addToCartButton, { opacity: quantity === 0 ? 0.5 : 1 }]}
+          style={[styles.addToCartButton, { opacity: quantity === '0' || quantity === '' ? 0.5 : 1 }]}
           onPress={addToCart}
-          disabled={quantity === 0}
+          disabled={quantity === '0' || quantity === ''}
         >
           <Text style={styles.addToCartText}>Add to Cart</Text>
         </TouchableOpacity>
@@ -152,43 +108,19 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 6,
   },
-  priceContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginVertical: 6,
-  },
-  priceLabel: {
-    fontSize: 16,
-    color: '#777',
-  },
-  price: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#000',
-  },
-  buttonContainer: {
-    flexDirection: 'row',
+  quantityInputContainer: {
+    marginTop: 12,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 12,
   },
-  quantityButton: {
-    width: 40,
+  quantityInput: {
+    width: 250,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: '#007bff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 8,
-  },
-  quantityButtonText: {
-    fontSize: 24,
-    color: '#fff',
-  },
-  quantity: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginHorizontal: 16,
+    borderColor: 'green',
+    borderWidth: 1.5,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    textAlign: 'center',
+    fontSize: 16,
   },
   buttonWrapper: {
     position: 'absolute',

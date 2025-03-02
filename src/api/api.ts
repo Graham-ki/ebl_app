@@ -70,10 +70,15 @@ export const getCategoryAndProducts = (categorySlug: string) => {
   });
 };
 
+//get my orders
 export const getMyOrders = () => {
-  const {
-    user: { id },
-  } = useAuth();
+  const { user } = useAuth();
+
+  if (!user || !user.id) {
+    throw new Error('User not authenticated');
+  }
+
+  const { id } = user;
 
   return useQuery({
     queryKey: ['orders', id],
@@ -84,32 +89,40 @@ export const getMyOrders = () => {
         .order('created_at', { ascending: false })
         .eq('user', id);
 
-      if (error)
-        alert(
-          'Unable to fetch orders!' 
-        );
+      if (error) {
+        alert('Unable to fetch orders!');
+        return [];
+      }
 
       return data;
     },
+    refetchOnWindowFocus: true,  
+    refetchInterval: 5000, 
   });
 };
-
+ //get my orders
 export const createOrder = () => {
-  const {
-    user: { id },
-  } = useAuth();
+  const { user } = useAuth();
+
+  if (!user || !user.id) {
+    throw new Error('User not authenticated');
+  }
+
+  const { id } = user;
+
+  const slug = generateOrderSlug();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ totalPrice }: { totalPrice: number }) => {
+    async mutationFn({ totalPrice}: { totalPrice: number; }) {
       const { data, error } = await supabase
         .from('order')
         .insert({
           totalPrice,
-          slug: generateOrderSlug(),
+          slug,
           user: id,
           status: 'Pending',
-          receiption_status: 'Pending',
+          receiption_status: 'Pending'
         })
         .select('*')
         .single();
@@ -121,23 +134,15 @@ export const createOrder = () => {
 
       return data;
     },
-    onSuccess: (newOrder) => {
-      // Invalidate the 'orders' query to trigger a refetch
-      queryClient.invalidateQueries({ queryKey: ['orders', id] });
 
-      // Optional: Optimistically update the orders list
-      queryClient.setQueryData(['orders', id], (oldOrders: any) => [
-        newOrder,
-        ...(oldOrders || []),
-      ]);
-    },
-    onError: (error) => {
-      alert('Failed to place order: ' + error.message);
+    async onSuccess() {
+      await queryClient.invalidateQueries({ queryKey: ['order'] });
     },
   });
 };
 
 
+//create order item
 export const createOrderItem = () => {
   return useMutation({
     async mutationFn(
@@ -158,37 +163,16 @@ export const createOrderItem = () => {
         )
         .select('*');
 
-      const productQuantities = insertData.reduce(
-        (acc, { productId, quantity }) => {
-          if (!acc[productId]) {
-            acc[productId] = 0;
-          }
-          acc[productId] += quantity;
-          return acc;
-        },
-        {} as Record<number, number>
-      );
-
-      await Promise.all(
-        Object.entries(productQuantities).map(
-          async ([productId, totalQuantity]) =>
-            supabase.rpc('decrement_product_quantity', {
-              product_id: Number(productId),
-              quantity: totalQuantity,
-            })
-        )
-      );
-
-      if (error)
-        alert(
-          'Unable to create order item!'
-        );
-
+      if (error) {
+        alert('Unable to create order item!');
+        return;
+      }
       return data;
     },
   });
 };
 
+//create order item
 export const getMyOrder = (slug: string) => {
   const { user } = useAuth();
 
@@ -207,17 +191,17 @@ export const getMyOrder = (slug: string) => {
         .from('order')
         .select('*, order_items:order_item(*, products:product(*))')
         .eq('slug', slug)
-        .eq('user', user.id)
+        .eq('user', user.id) // Safe access now
         .single();
-
       if (error || !data) {
         alert('Unable to fetch data!');
       }
-
       return data;
     },
   });
 };
+
+// Function to retrieve all proofs of payment for a given order
 export const getOrderProofs = async (orderId: number) => {
   try {
     const { data, error } = await supabase
