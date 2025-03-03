@@ -4,15 +4,29 @@ import { getMyOrder, getOrderProofs,updateReceiptStatus } from '../../../api/api
 import { uploadProofsOfPayment } from '../../../api/storage';
 import { format } from 'date-fns';
 import React, { useEffect, useState } from 'react';
-
+import { supabase } from '../../../lib/supabase';
 const OrderDetails = () => {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const [proofs, setProofs] = useState<any[]>([]);
   const [loadingProofs, setLoadingProofs] = useState(false);
   const [receiptConfirmed, setReceiptConfirmed] = useState(false);
   const { data: order, error, isLoading } = getMyOrder(slug);
-
+  const deleteProof = async (proofId: number) => {
+    if (!proofId) return;
+  
+    const { error } = await supabase.from('proof_of_payment').delete().eq('id', proofId);
+  
+    if (error) {
+      console.error('Error deleting proof:', error);
+      return;
+    }
+  
+    // Remove the deleted proof from state
+    setProofs((prevProofs) => prevProofs.filter((proof) => proof.id !== proofId));
+  };
+  
   useEffect(() => {
+    
     const fetchProofs = async () => {
       setLoadingProofs(true);
       const proofData = await getOrderProofs(order.id); 
@@ -31,7 +45,7 @@ const OrderDetails = () => {
   }, [order?.id]);
 
   if (isLoading) return <ActivityIndicator />;
-  if (error || !order) return <Text>Error: {error?.message}</Text>;
+  if (error || !order) return <Text>Error: {error instanceof Error ? error.message : error}</Text>;
 
   const sections = [
     {
@@ -49,8 +63,16 @@ const OrderDetails = () => {
       data: proofs,
       renderItem: ({ item }: any) => (
         <View style={styles.proofItem}>
-          <Image source={{ uri: item.file_url }} style={styles.proofImage} />
-        </View>
+        <Image source={{ uri: item.file_url }} style={styles.proofImage} />
+        
+        {/* Delete Button */}
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => deleteProof(item.id)}
+        >
+          <Text style={styles.deleteButtonText}>Delete</Text>
+        </TouchableOpacity>
+      </View>  
       ),
     },
   ];
@@ -243,5 +265,16 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#0c5460',
+  },
+  deleteButton: {
+    backgroundColor: 'red',
+    padding: 4,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  deleteButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
