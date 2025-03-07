@@ -66,7 +66,7 @@ const OrderDetails = () => {
       setProofs((prevProofs) => prevProofs.filter((proof) => proof.id !== proofId));
 
       // Show success alert
-      Alert.alert('Success', 'Proof and file deleted successfully!');
+      Alert.alert('Success', 'Proof file deleted successfully!');
     } catch (error) {
       Alert.alert('Error', 'An unexpected error occurred. Please try again.');
     }
