@@ -1,47 +1,95 @@
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, SectionList, StyleSheet, Text, View, TouchableOpacity, Image } from 'react-native';
-import { getMyOrder, getOrderProofs,updateReceiptStatus } from '../../../api/api'; 
+import { LinearGradient } from 'expo-linear-gradient'; // Import LinearGradient
+import { getMyOrder, getOrderProofs, updateReceiptStatus } from '../../../api/api';
 import { uploadProofsOfPayment } from '../../../api/storage';
 import { format } from 'date-fns';
 import React, { useEffect, useState } from 'react';
+import { Alert } from 'react-native';
 import { supabase } from '../../../lib/supabase';
+
 const OrderDetails = () => {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const [proofs, setProofs] = useState<any[]>([]);
   const [loadingProofs, setLoadingProofs] = useState(false);
   const [receiptConfirmed, setReceiptConfirmed] = useState(false);
   const { data: order, error, isLoading } = getMyOrder(slug);
+
   const deleteProof = async (proofId: number) => {
     if (!proofId) return;
-  
-    const { error } = await supabase.from('proof_of_payment').delete().eq('id', proofId);
-  
-    if (error) {
-      console.error('Error deleting proof:', error);
-      return;
+
+    try {
+      // Step 1: Fetch the proof to get the file_url
+      const { data: proof, error: fetchError } = await supabase
+        .from('proof_of_payment')
+        .select('file_url')
+        .eq('id', proofId)
+        .single();
+
+      if (fetchError) {
+        Alert.alert('Error', 'Failed to fetch proof details. Please try again.');
+        return;
+      }
+
+      // Step 2: Extract the file path from the file_url
+      const fileUrl = proof.file_url;
+      const filePath = fileUrl.split('/storage/v1/object/public/app-images/')[1]; // Extract the file path
+
+      if (!filePath) {
+        Alert.alert('Error', 'Invalid file URL. Please contact support.');
+        return;
+      }
+
+      // Step 3: Delete the file from the storage bucket
+      const { error: deleteStorageError } = await supabase
+        .storage
+        .from('app-images') // Replace with your bucket name
+        .remove([filePath]);
+
+      if (deleteStorageError) {
+        Alert.alert('Error', 'Failed to delete file from storage. Please try again.');
+        return;
+      }
+
+      // Step 4: Delete the proof from the proof_of_payment table
+      const { error: deleteTableError } = await supabase
+        .from('proof_of_payment')
+        .delete()
+        .eq('id', proofId);
+
+      if (deleteTableError) {
+        Alert.alert('Error', 'Failed to delete proof from the database. Please try again.');
+        return;
+      }
+
+      // Step 5: Remove the deleted proof from state
+      setProofs((prevProofs) => prevProofs.filter((proof) => proof.id !== proofId));
+
+      // Show success alert
+      Alert.alert('Success', 'Proof and file deleted successfully!');
+    } catch (error) {
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
     }
-  
-    // Remove the deleted proof from state
-    setProofs((prevProofs) => prevProofs.filter((proof) => proof.id !== proofId));
   };
-  
+
   useEffect(() => {
-    
     const fetchProofs = async () => {
       setLoadingProofs(true);
-      const proofData = await getOrderProofs(order.id); 
+      const proofData = await getOrderProofs(order.id);
       setProofs(proofData);
       setLoadingProofs(false);
     };
+
     const checkReceiptStatus = () => {
       if (order?.receiption_status === 'Received') {
-        setReceiptConfirmed(true); 
+        setReceiptConfirmed(true);
       }
     };
-    if (order?.id){
+
+    if (order?.id) {
       fetchProofs();
       checkReceiptStatus();
-    } 
+    }
   }, [order?.id]);
 
   if (isLoading) return <ActivityIndicator />;
@@ -63,16 +111,15 @@ const OrderDetails = () => {
       data: proofs,
       renderItem: ({ item }: any) => (
         <View style={styles.proofItem}>
-        <Image source={{ uri: item.file_url }} style={styles.proofImage} />
-        
-        {/* Delete Button */}
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => deleteProof(item.id)}
-        >
-          <Text style={styles.deleteButtonText}>Delete</Text>
-        </TouchableOpacity>
-      </View>  
+          <Image source={{ uri: item.file_url }} style={styles.proofImage} />
+          {/* Delete Button */}
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => deleteProof(item.id)}
+          >
+            <Text style={styles.deleteButtonText}>Remove</Text>
+          </TouchableOpacity>
+        </View>
       ),
     },
   ];
@@ -96,46 +143,49 @@ const OrderDetails = () => {
       alert(`Failed to confirm receipt!`);
     }
   };
-  
+
   return (
-    <SectionList
-      style={styles.container}
-      ListHeaderComponent={
-        <>
-          <Stack.Screen options={{ title: `${order.slug}` }} />
-          <View style={styles.infoContainer}>
-            <Text style={styles.orderSlug}>{order.slug}</Text>
-          </View>
-          <Text style={styles.details}>{order.description}</Text>
-          <View style={[styles.statusBadge, styles[`statusBadge_${order.status}`]]}>
-            <Text style={styles.statusText}>{order.status}</Text>
-          </View>
-          <View style={styles.buttonRow}>
-            <TouchableOpacity onPress={handleProofUpload} style={styles.uploadButton}>
-              <Text style={styles.buttonText}>Add Payment slip</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleConfirmReceipt}
-              style={[styles.confirmButton, receiptConfirmed && { backgroundColor: '#6c757d' }]}
-              disabled={receiptConfirmed}
-              >
-            <Text style={styles.buttonText}>
-              {receiptConfirmed ? 'You Received' : 'Confirm Receipt'}
-            </Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.totalContainer}>
-          <Text style={styles.totalText}>{format(new Date(order.created_at), 'MMM dd, yyyy')}</Text>
-          </View>
-        </>
-      }
-      sections={sections}
-      keyExtractor={(item, index) => index.toString()}
-      renderSectionHeader={({ section: { title } }) => (
-        <Text style={styles.sectionHeader}>{title}</Text>
-      )}
-      contentContainerStyle={{ paddingBottom: 16 }}
-    />
+    <LinearGradient colors={["#00b09b", "#96c93d"]} style={styles.container}>
+      <View style={styles.innerContainer}>
+        <SectionList
+          ListHeaderComponent={
+            <>
+              <Stack.Screen options={{ title: `${order.slug}` }} />
+              <View style={styles.infoContainer}>
+                <Text style={styles.orderSlug}>{order.slug}</Text>
+              </View>
+              <Text style={styles.details}>{order.description}</Text>
+              <View style={[styles.statusBadge, styles[`statusBadge_${order.status}`]]}>
+                <Text style={styles.statusText}>{order.status}</Text>
+              </View>
+              <View style={styles.buttonRow}>
+                <TouchableOpacity onPress={handleProofUpload} style={styles.uploadButton}>
+                  <Text style={styles.buttonText}>Add Payment slip</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleConfirmReceipt}
+                  style={[styles.confirmButton, receiptConfirmed && { backgroundColor: '#6c757d' }]}
+                  disabled={receiptConfirmed}
+                >
+                  <Text style={styles.buttonText}>
+                    {receiptConfirmed ? 'You Received' : 'Confirm Receipt'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.totalContainer}>
+                <Text style={styles.totalText}>{format(new Date(order.created_at), 'MMM dd, yyyy')}</Text>
+              </View>
+            </>
+          }
+          sections={sections}
+          keyExtractor={(item, index) => index.toString()}
+          renderSectionHeader={({ section: { title } }) => (
+            <Text style={styles.sectionHeader}>{title}</Text>
+          )}
+          contentContainerStyle={{ paddingBottom: 16 }}
+        />
+      </View>
+    </LinearGradient>
   );
 };
 
@@ -144,7 +194,10 @@ export default OrderDetails;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+  },
+  innerContainer: {
+    flex: 1,
+    padding: 16,
   },
   infoContainer: {
     backgroundColor: 'lightblue',
@@ -177,23 +230,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'green',
   },
   statusBadge_Approved: {
-    backgroundColor: 'blue'  
+    backgroundColor: 'blue',
   },
-    statusBadge_Cancelled: {
-      backgroundColor: 'red',
-    },
-    statusBadge_Balanced: {
-      backgroundColor: 'teal',
-    },
+  statusBadge_Cancelled: {
+    backgroundColor: 'red',
+  },
+  statusBadge_Balanced: {
+    backgroundColor: 'teal',
+  },
   statusText: {
     color: '#fff',
     fontWeight: 'bold',
-  },
-  date: {
-    fontSize: 14,
-    color: '#555',
-    marginTop: 16,
-    marginHorizontal: 10,
   },
   buttonRow: {
     flexDirection: 'row',
@@ -225,9 +272,9 @@ const styles = StyleSheet.create({
   sectionHeader: {
     fontSize: 18,
     fontWeight: 'bold',
-    backgroundColor: '#fff',
     paddingHorizontal: 10,
     paddingVertical: 8,
+    backgroundColor: 'transparent', // Ensure no background color
   },
   orderItem: {
     marginTop: 8,

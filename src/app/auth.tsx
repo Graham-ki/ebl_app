@@ -1,4 +1,13 @@
-import { View, Text, StyleSheet, ImageBackground, TextInput, TouchableOpacity, Animated } from "react-native";
+import { View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  Alert, 
+  Image, 
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator } from "react-native";
 import { useForm, Controller } from 'react-hook-form';
 import * as zod from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -6,7 +15,9 @@ import { Redirect, Stack } from "expo-router";
 import { supabase } from "../lib/supabase";
 import { Toast } from "react-native-toast-notifications";
 import { useAuth } from "../providers/auth-provider";
-import React, { useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 const authSchema = zod.object({
   email: zod.string().email({ message: 'Invalid email!' }),
@@ -25,16 +36,6 @@ export default function Auth() {
     },
   });
 
-  const fadeAnim = useRef(new Animated.Value(0)).current; // For fade-in animation
-
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 1000,
-      useNativeDriver: true,
-    }).start();
-  }, [fadeAnim]);
-
   const signIn = async (data: zod.infer<typeof authSchema>) => {
     const { error } = await supabase.auth.signInWithPassword(data);
     if (error) {
@@ -49,24 +50,25 @@ export default function Auth() {
   };
 
   return (
-    <ImageBackground source={require('../../assets/images/login.jpg')} style={styles.backgroundImage}>
-      <View style={styles.overlay} />
-      <Stack.Screen options={{ headerShown: false }} />
-      <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-        <Text style={styles.title}>Welcome</Text>
-        <Text style={styles.subtitle}>Please login to continue</Text>
+    <LinearGradient colors={["#00b09b", "#96c93d"]} style={styles.container}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.inner}>
+        
+        {/* Logo */}
+        <Image source={require("../../assets/images/logo.png")} style={styles.logo} />
+        
+        {/* Welcome Message */}
+        <Text style={styles.welcomeText}>Welcome </Text>
+        <Text style={styles.subText}>Please login to continue</Text>
 
         {/* Email Input */}
-        <Controller
-          control={control}
-          name="email"
-          render={({
-            field: { value, onChange, onBlur },
-            fieldState: { error },
-          }) => (
-            <>
+        <View style={styles.inputContainer}>
+          <Ionicons name="person-outline" size={20} color="gray" style={styles.icon} />
+          <Controller
+            control={control}
+            name="email"
+            render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                placeholder="Email"
+                placeholder="Enter your email"
                 style={styles.input}
                 value={value}
                 onChangeText={onChange}
@@ -75,22 +77,19 @@ export default function Auth() {
                 autoCapitalize="none"
                 editable={!formState.isSubmitting}
               />
-              {error && <Text style={styles.error}>{error.message}</Text>}
-            </>
-          )}
-        />
+            )}
+          />
+        </View>
 
         {/* Password Input */}
-        <Controller
-          control={control}
-          name="password"
-          render={({
-            field: { value, onChange, onBlur },
-            fieldState: { error },
-          }) => (
-            <>
+        <View style={styles.inputContainer}>
+          <Ionicons name="lock-closed-outline" size={20} color="gray" style={styles.icon} />
+          <Controller
+            control={control}
+            name="password"
+            render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                placeholder="Password"
+                placeholder="Enter your password"
                 style={styles.input}
                 value={value}
                 onChangeText={onChange}
@@ -100,92 +99,94 @@ export default function Auth() {
                 secureTextEntry
                 editable={!formState.isSubmitting}
               />
-              {error && <Text style={styles.error}>{error.message}</Text>}
-            </>
-          )}
-        />
+            )}
+          />
+        </View>
 
-        {/* Continue Button */}
-        <TouchableOpacity
-          style={styles.button}
+        {/* Login Button */}
+        <TouchableOpacity 
           onPress={handleSubmit(signIn)}
-          disabled={formState.isSubmitting}
+          style={styles.button}
+          disabled={formState.isSubmitting} // Disable button when loading
         >
-          <Text style={styles.buttonText}>Continue</Text>
+          <LinearGradient colors={["#ff9a9e", "#fad0c4"]} style={styles.buttonGradient}>
+            {formState.isSubmitting ? (
+              <ActivityIndicator color="#333" /> // Show spinner when loading
+            ) : (
+              <Text style={styles.buttonText}>Continue</Text> // Show text when not loading
+            )}
+          </LinearGradient>
         </TouchableOpacity>
-      </Animated.View>
-    </ImageBackground>
+
+        {/* Footer */}
+        <Text style={styles.footerText}>EBL © 2025</Text>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  backgroundImage: {
-    flex: 1,
-    resizeMode: 'cover',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-  },
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-    width: '100%',
+    justifyContent: "center",
   },
-  title: {
-    fontSize: 55,
-    fontWeight: 'bold',
-    color: 'lightgreen',
-    marginBottom: 8,
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
-    letterSpacing: 5,
-    textAlign: 'center',
+  inner: {
+    alignItems: "center",
+    paddingHorizontal: 20,
   },
-  subtitle: {
-    fontSize: 18,
-    color: 'lightgreen',
-    marginBottom: 32,
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+  logo: {
+    width: 120,
+    height: 120,
+    marginBottom: 10,
+    borderRadius: 40
+  },
+  welcomeText: {
+    fontSize: 26,
+    fontWeight: "bold",
+    color: "#fff",
+    marginBottom: 5,
+  },
+  subText: {
+    fontSize: 14,
+    color: "#ddd",
+    marginBottom: 30,
+  },
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(193, 243, 169, 0.9)", // Semi-transparent white background
+    borderRadius: 25,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    marginBottom: 15,
+    width: "100%",
+  },
+  icon: {
+    marginRight: 10,
   },
   input: {
-    width: '90%',
-    padding: 12,
-    marginBottom: 16,
-    backgroundColor: 'rgba(202, 248, 193, 0.9)',
-    borderRadius: 8,
+    flex: 1,
+    color: "#000", // Black text color for visibility
     fontSize: 16,
-    color: 'black',
-    borderColor: 'green',
-    borderWidth: 1,
   },
   button: {
-    backgroundColor: 'transparent',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 16,
-    width: '90%',
-    alignItems: 'center',
-    borderColor: 'green',
-    borderWidth: 1,
+    width: "100%",
+    borderRadius: 25,
+    overflow: "hidden",
+  },
+  buttonGradient: {
+    paddingVertical: 12,
+    alignItems: "center",
+    borderRadius: 25,
   },
   buttonText: {
+    color: "#333",
+    fontWeight: "bold",
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#fff',
   },
-  error: {
-    color: 'red',
+  footerText: {
+    marginTop: 20,
     fontSize: 12,
-    marginBottom: 16,
-    textAlign: 'left',
-    width: '90%',
+    color: "#ddd",
   },
 });

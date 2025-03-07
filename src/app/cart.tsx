@@ -10,6 +10,7 @@ import React from 'react';
 import { useCartStore } from '../store/cart-store';
 import { createOrder, createOrderItem } from '../api/api';
 import FontAwesome from 'react-native-vector-icons/FontAwesome'; // Import Icons
+import { LinearGradient } from 'expo-linear-gradient'; // Import LinearGradient
 
 type CartItemType = {
     id: number;
@@ -81,45 +82,52 @@ export default function Cart() {
     };
 
     return (
-        <View style={styles.container}>
-            {items.length === 0 ? (
-                <View style={styles.emptyCartContainer}>
-                    <Image source={require('../../assets/images/empty-cart.png')} style={styles.emptyCartImage} />
-                    <Text style={styles.emptyCartText}>No items in your cart!</Text>
-                </View>
-            ) : (
-                <FlatList
-                    data={items}
-                    keyExtractor={item => item.id.toString()}
-                    renderItem={({ item }) => (
-                        <CartItem item={item} onDecrement={decrementItem} onIncrement={incrementItem} onRemove={removeItem} />
-                    )}
-                    contentContainerStyle={styles.cartList}
-                />
-            )}
+        <LinearGradient colors={["#00b09b", "#96c93d"]} style={styles.container}>
+            <View style={styles.innerContainer}>
+                {items.length === 0 ? (
+                    <View style={styles.emptyCartContainer}>
+                        <Image source={require('../../assets/images/empty-cart.png')} style={styles.emptyCartImage} />
+                        <Text style={styles.emptyCartText}>No items in your cart!</Text>
+                    </View>
+                ) : (
+                    <>
+                        <Text style={styles.cartTitle}>Your Order Items</Text>
+                        <FlatList
+                            data={items}
+                            keyExtractor={item => item.id.toString()}
+                            renderItem={({ item }) => (
+                                <CartItem item={item} onDecrement={decrementItem} onIncrement={incrementItem} onRemove={removeItem} />
+                            )}
+                            contentContainerStyle={styles.cartList}
+                        />
+                    </>
+                )}
 
-            {/* Checkout Section */}
-            <View style={styles.footer}>
-                <View style={styles.buttonRow}>
-                    {/* Checkout Button */}
-                    <TouchableOpacity 
-                        onPress={items.length > 0 ? handleCheckout : null} 
-                        style={[styles.checkoutButton, items.length === 0 && styles.disabledButton]} 
-                        disabled={items.length === 0}
-                    >
-                        <FontAwesome name="shopping-cart" size={18} color="white" /> 
-                        <Text style={styles.checkoutButtonText}>  Place order</Text>
-                    </TouchableOpacity>
+                {/* Checkout Section */}
+                <View style={styles.footer}>
+                    <View style={styles.buttonRow}>
+                        {/* Checkout Button */}
+                        <TouchableOpacity 
+                            onPress={items.length > 0 ? handleCheckout : null} 
+                            style={[styles.checkoutButton, items.length === 0 && styles.disabledButton]} 
+                            disabled={items.length === 0}
+                        >
+                            <FontAwesome name="shopping-cart" size={18} color="white" /> 
+                            <Text style={styles.checkoutButtonText}>  Place order</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </View>
-        </View>
+        </LinearGradient>
     );
 }
 
 const styles = StyleSheet.create({
   container: {
       flex: 1,
-      backgroundColor: '#fff',
+  },
+  innerContainer: {
+      flex: 1,
       paddingHorizontal: 16,
   },
   cartList: {
@@ -131,7 +139,14 @@ const styles = StyleSheet.create({
       marginBottom: 16,
       padding: 16,
       borderRadius: 8,
-      backgroundColor: '#f9f9f9',
+      backgroundColor: 'rgba(255, 255, 255, 0.9)', // Semi-transparent white background
+  },
+  cartTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    textAlign: 'center', // Center text horizontally
+    alignSelf: 'center',
   },
   itemDetails: {
       flex: 1,
@@ -209,6 +224,7 @@ const styles = StyleSheet.create({
       width: 150,
       height: 150,
       marginBottom: 20,
+      borderRadius: 40,
   },
   emptyCartText: {
       fontSize: 18,

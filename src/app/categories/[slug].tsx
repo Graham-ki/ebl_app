@@ -7,7 +7,7 @@ import {
   View,
 } from 'react-native';
 import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
-
+import { LinearGradient } from 'expo-linear-gradient'; // Import LinearGradient
 import { ProductListItem } from '../../components/product-list-item';
 import { getCategoryAndProducts } from '../../api/api';
 import React from 'react';
@@ -24,29 +24,31 @@ const Category = () => {
   const { category, products } = data;
 
   return (
-    <View style={styles.container}>
-      <Stack.Screen options={{ title: category.name }} />
-      <Text style={styles.categoryName}>Available {category.name}:</Text>
+    <LinearGradient colors={["#00b09b", "#96c93d"]} style={styles.container}>
+      <View style={styles.innerContainer}>
+        <Stack.Screen options={{ title: category.name }} />
+        <Text style={styles.categoryName}>Available {category.name}:</Text>
 
-      {products.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Image 
-            source={require('../../../assets/images/empty-cart.png')} 
-            style={styles.emptyImage}
+        {products.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Image 
+              source={require('../../../assets/images/empty-cart.png')} 
+              style={styles.emptyImage}
+            />
+            <Text style={styles.noProductsText}>No products added yet!</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={products}
+            keyExtractor={item => item.id.toString()}
+            renderItem={({ item }) => <ProductListItem product={item} />}
+            numColumns={2}
+            columnWrapperStyle={styles.productRow}
+            contentContainerStyle={styles.productsList}
           />
-          <Text style={styles.noProductsText}>No products added yet!</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={products}
-          keyExtractor={item => item.id.toString()}
-          renderItem={({ item }) => <ProductListItem product={item} />}
-          numColumns={2}
-          columnWrapperStyle={styles.productRow}
-          contentContainerStyle={styles.productsList}
-        />
-      )}
-    </View>
+        )}
+      </View>
+    </LinearGradient>
   );
 };
 
@@ -55,7 +57,9 @@ export default Category;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+  },
+  innerContainer: {
+    flex: 1,
     padding: 16,
   },
   categoryImage: {
@@ -69,6 +73,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 16,
+    color: '#fff', // White text for better contrast
   },
   productsList: {
     flexGrow: 1,
@@ -99,7 +104,7 @@ const styles = StyleSheet.create({
   noProductsText: {
     textAlign: 'center',
     fontSize: 18,
-    color: '#888',
+    color: '#fff', // White text for better contrast
     fontWeight: 'bold',
     marginTop: 30,
   },

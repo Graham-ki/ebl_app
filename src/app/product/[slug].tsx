@@ -10,8 +10,9 @@ import {
   TextInput,
 } from 'react-native';
 import { useToast } from 'react-native-toast-notifications';
-import { useCartStore } from '../../store/cart-store'; 
-import { getProduct } from '../../api/api'; 
+import { useCartStore } from '../../store/cart-store';
+import { getProduct } from '../../api/api';
+import { LinearGradient } from 'expo-linear-gradient'; // Import LinearGradient
 
 const ProductDetails = () => {
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -53,34 +54,37 @@ const ProductDetails = () => {
   const totalPrice = (product.price * (parseInt(quantity, 10) || 0)).toFixed();
 
   return (
-    <View style={styles.container}>
-      <Stack.Screen options={{ title: product.title }} />
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
-        <View style={styles.card}>
-          <Text style={styles.title}>{product.title}</Text>
-          <Text>Enter the number of boxes</Text>
-          <View style={styles.quantityInputContainer}>
-            <TextInput
-              style={styles.quantityInput}
-              value={quantity}
-              onChangeText={handleQuantityChange}
-              keyboardType="numeric"
-              placeholder="Enter quantity"
-            />
+    <LinearGradient colors={["#00b09b", "#96c93d"]} style={styles.container}>
+      <View style={styles.innerContainer}>
+        <Stack.Screen options={{ title: product.title }} />
+        <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+          <View style={styles.card}>
+            <Text style={styles.title}>{product.title}</Text>
+            <Text style={styles.description}>Enter the number of boxes</Text>
+            <View style={styles.quantityInputContainer}>
+              <TextInput
+                style={styles.quantityInput}
+                value={quantity}
+                onChangeText={handleQuantityChange}
+                keyboardType="numeric"
+                placeholder="Enter quantity"
+                placeholderTextColor="#aaa"
+              />
+            </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
 
-      <View style={styles.buttonWrapper}>
-        <TouchableOpacity
-          style={[styles.addToCartButton, { opacity: quantity === '0' || quantity === '' ? 0.5 : 1 }]}
-          onPress={addToCart}
-          disabled={quantity === '0' || quantity === ''}
-        >
-          <Text style={styles.addToCartText}>Add to Cart</Text>
-        </TouchableOpacity>
+        <View style={styles.buttonWrapper}>
+          <TouchableOpacity
+            style={[styles.addToCartButton, { opacity: quantity === '0' || quantity === '' ? 0.5 : 1 }]}
+            onPress={addToCart}
+            disabled={quantity === '0' || quantity === ''}
+          >
+            <Text style={styles.addToCartText}>Add to Cart</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </LinearGradient>
   );
 };
 
@@ -89,10 +93,13 @@ export default ProductDetails;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8F8',
+  },
+  innerContainer: {
+    flex: 1,
+    padding: 16,
   },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)', // Semi-transparent white background
     margin: 16,
     padding: 16,
     borderRadius: 12,
@@ -107,6 +114,12 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 6,
+    color: '#333', // Dark text for better contrast
+  },
+  description: {
+    fontSize: 16,
+    color: '#555', // Dark text for better contrast
+    marginBottom: 12,
   },
   quantityInputContainer: {
     marginTop: 12,
@@ -121,16 +134,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     textAlign: 'center',
     fontSize: 16,
+    color: '#333', // Dark text for better contrast
+    backgroundColor: '#fff', // White background for input
   },
   buttonWrapper: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#fff',
+    // Semi-transparent white background
     paddingVertical: 12,
     alignItems: 'center',
-    shadowColor: '#000',
+  
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
